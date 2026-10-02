@@ -21,6 +21,12 @@ jobs:
       run: |
         mkdir -p app/src/main/res/values
         
+        # gradle.properties 생성 (에러 해결 핵심 스위치 켬)
+        cat << 'EOF' > gradle.properties
+        android.useAndroidX=true
+        android.enableJetifier=true
+        EOF
+        
         # AndroidManifest.xml 생성
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
