@@ -17,11 +17,91 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: 빌드 실행 권한 부여
-      run: chmod +x ./gradlew || true
+    - name: 안드로이드 필수 뼈대 파일 자동 생성
+      run: |
+        mkdir -p app/src/main/res/values
+        
+        # AndroidManifest.xml 생성
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.r2quant.cockpit">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <application android:allowBackup="true" android:label="R2 퀀트" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                <activity android:name=".MainActivity" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+        
+        # app/build.gradle 생성
+        cat << 'EOF' > app/build.gradle
+        plugins {
+            id 'com.android.application'
+            id 'org.jetbrains.kotlin.android'
+        }
+        android {
+            namespace 'com.r2quant.cockpit'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.r2quant.cockpit"
+                minSdk 24
+                targetSdk 34
+                versionCode 1
+                versionName "3.9"
+            }
+            buildTypes {
+                release {
+                    minifyEnabled false
+                    proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                }
+            }
+        }
+        dependencies {
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'androidx.core:core-splashscreen:1.0.1'
+        }
+        EOF
+        
+        # settings.gradle 생성
+        cat << 'EOF' > settings.gradle
+        pluginManagement {
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        rootProject.name = "R2Cockpit"
+        include ':app'
+        EOF
+        
+        # 프로젝트 build.gradle 생성
+        cat << 'EOF' > build.gradle
+        plugins {
+            id 'com.android.application' version '8.2.0' apply false
+            id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
+        }
+        EOF
+
+    - name: 빌드 시스템 권한 세팅
+      run: |
+        gradle wrapper --gradle-version 8.2
+        chmod +x ./gradlew
 
     - name: 안드로이드 APK 앱 추출 (빌드 진행)
-      run: ./gradlew assembleDebug || echo "Build process initialized"
+      run: ./gradlew assembleDebug
 
     - name: 완성된 APK 다운로드 링크 생성
       uses: actions/upload-artifact@v3
