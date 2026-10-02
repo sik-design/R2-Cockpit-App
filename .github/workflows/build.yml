@@ -43,7 +43,7 @@ jobs:
         </manifest>
         EOF
         
-        # app/build.gradle 생성
+        # app/build.gradle 생성 (자바와 코틀린 버전을 17로 통일)
         cat << 'EOF' > app/build.gradle
         plugins {
             id 'com.android.application'
@@ -64,6 +64,13 @@ jobs:
                     minifyEnabled false
                     proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
                 }
+            }
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+            kotlinOptions {
+                jvmTarget = '17'
             }
         }
         dependencies {
