@@ -17,20 +17,20 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: 안드로이드 필수 뼈대 파일 및 파이어베이스 세팅
+    - name: 안드로이드 필수 뼈대 파일 자동 생성
       run: |
         mkdir -p app/src/main/res/values
         
-        # 1. 파이어베이스 열쇠를 app 폴더 안으로 이동 (오류 방지용)
+        # 1. 파이어베이스 열쇠 이동
         mv google-services.json app/google-services.json || true
         
-        # 2. gradle.properties 생성
+        # 2. gradle.properties 생성 (에러 해결 핵심 스위치)
         cat << 'EOF' > gradle.properties
         android.useAndroidX=true
         android.enableJetifier=true
         EOF
         
-        # 3. AndroidManifest.xml 생성
+        # 3. AndroidManifest.xml 생성 (FCM 안테나 포함)
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.r2quant.cockpit">
@@ -42,7 +42,6 @@ jobs:
                         <category android:name="android.intent.category.LAUNCHER" />
                     </intent-filter>
                 </activity>
-                <!-- ▼ 여기서부터 추가된 안테나 코드 ▼ -->
                 <service
                     android:name=".MyFirebaseMessagingService"
                     android:exported="true">
@@ -50,12 +49,11 @@ jobs:
                         <action android:name="com.google.firebase.MESSAGING_EVENT" />
                     </intent-filter>
                 </service>
-                <!-- ▲ 여기까지 ▲ -->
             </application>
         </manifest>
         EOF
         
-        # 4. app/build.gradle 생성 (파이어베이스 플러그인 장착)
+        # 4. app/build.gradle 생성 (★ 최신 보안 및 통신 부품 장착 완료)
         cat << 'EOF' > app/build.gradle
         plugins {
             id 'com.android.application'
@@ -90,8 +88,15 @@ jobs:
             implementation 'androidx.core:core-ktx:1.12.0'
             implementation 'androidx.appcompat:appcompat:1.6.1'
             implementation 'androidx.core:core-splashscreen:1.0.1'
+            
+            // 파이어베이스 통신망
             implementation platform('com.google.firebase:firebase-bom:32.7.0')
             implementation 'com.google.firebase:firebase-messaging-ktx'
+            
+            // [V3.0 핵심 추가 부품] 군사급 암호화, 광속 API 통신, 비동기 엔진
+            implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+            implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+            implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
         }
         EOF
         
@@ -115,7 +120,7 @@ jobs:
         include ':app'
         EOF
         
-        # 6. 프로젝트 최상위 build.gradle 생성 (파이어베이스 지원)
+        # 6. 프로젝트 최상위 build.gradle 생성
         cat << 'EOF' > build.gradle
         plugins {
             id 'com.android.application' version '8.2.2' apply false
