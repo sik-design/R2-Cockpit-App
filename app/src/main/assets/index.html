@@ -1,570 +1,169 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>R2 퀀트 조종석 (최종 A안 레이아웃 적용)</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif; -webkit-tap-highlight-color: transparent; }
-    
-    body { background-color: #000; display: flex; justify-content: center; align-items: center; height: 100dvh; overflow: hidden; }
-    
-    .phone-frame {
-      width: 100%; height: 100dvh; max-width: 480px; background: #0f131a;
-      position: relative; overflow: hidden; display: flex; flex-direction: column; color: #f8fafc;
-    }
-
-    /* =========================================
-       [스플래시 로딩 화면]
-       ========================================= */
-    #splashScreen {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(180deg, #05070a 0%, #0f131a 100%);
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 9999; transition: opacity 0.6s ease;
-    }
-    .splash-version { position: absolute; top: 24px; left: 24px; font-size: 10px; font-weight: 800; color: #475569; letter-spacing: 1px; }
-    .splash-logo {
-      font-size: 42px; font-weight: 900; letter-spacing: -1.5px; margin-bottom: 80px;
-      background: linear-gradient(120deg, #d4af37 20%, #fffde7 40%, #fffde7 60%, #d4af37 80%);
-      background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text;
-      animation: shine 2.5s linear infinite; text-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
-    }
-    @keyframes shine { to { background-position: 200% center; } }
-    .splash-loading-box { position: absolute; bottom: 60px; width: 75%; display: flex; flex-direction: column; gap: 8px; }
-    .splash-text-row { display: flex; justify-content: space-between; align-items: flex-end; }
-    .splash-loading-text { font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; }
-    .splash-counter { font-size: 11px; font-weight: 900; color: #38bdf8; font-variant-numeric: tabular-nums; }
-    .splash-bar-bg { width: 100%; height: 2px; background: #1e2638; border-radius: 1px; overflow: hidden; }
-    .splash-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #00e676); border-radius: 1px; transition: width 0.1s linear; }
-
-    /* =========================================
-       1. 상단 관제탑 헤더 (A안 확장성 100% 반영)
-       ========================================= */
-    .hud-header { padding: 16px; background: rgba(15, 19, 26, 0.98); border-bottom: 1px solid #1e2638; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-shrink: 0; }
-    
-    .today-scoreboard { flex: 1; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
-    .today-score-title { font-size: 11px; color: #94a3b8; font-weight: 800; letter-spacing: 0.3px; }
-    
-    /* A안 전광판: 100% 옆에 [승/패 나란히] 그 밑에 [(+6.0%)] */
-    .score-main { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
-    .score-rate { font-size: 38px; font-weight: 900; color: #ff334b; text-shadow: 0 0 14px rgba(255, 51, 75, 0.4); letter-spacing: -1.5px; line-height: 1; }
-    
-    .score-detail-col { display: flex; flex-direction: column; align-items: center; gap: 5px; justify-content: center; }
-    .score-wl-row { display: flex; gap: 5px; justify-content: center; width: 100%; align-items: center; }
-    .win-tag-mini { color: #ff334b; background: rgba(255, 51, 75, 0.15); font-size: 11px; font-weight: 900; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(255, 51, 75, 0.35); line-height: 1; }
-    .loss-tag-mini { color: #38bdf8; background: rgba(56, 189, 248, 0.15); font-size: 11px; font-weight: 900; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.35); line-height: 1; }
-    .score-pnl { font-size: 14px; font-weight: 900; color: #ff334b; letter-spacing: 0.5px; line-height: 1; }
-
-    /* 우측 고정 박스 */
-    .header-right-col { width: 175px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-    .account-row { display: flex; justify-content: space-between; align-items: stretch; width: 100%; gap: 6px; height: 28px; }
-    .vip-badge { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(212, 175, 55, 0.25)); border: 1px solid #ffd700; color: #ffeb3b; font-size: 10px; font-weight: 900; padding: 0 5px; border-radius: 8px; white-space: nowrap; letter-spacing: -0.3px; }
-    .crown-icon { width: 12px; height: 12px; fill: #ffd700; flex-shrink: 0; }
-    .basic-badge { flex: 1; display: flex; align-items: center; justify-content: center; background: #1e2433; border: 1px solid #475569; color: #94a3b8; font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 8px; white-space: nowrap; letter-spacing: -0.3px; }
-    .settings-btn { width: 28px; flex-shrink: 0; background: #1e293b; border: 1px solid #475569; color: #cbd5e1; font-size: 14px; padding: 0; border-radius: 8px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-
-    /* 버튼 아이콘 고급화 및 비율 꽉 채움 */
-    .action-row { display: flex; gap: 6px; justify-content: space-between; width: 100%; height: 28px; }
-    .mini-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0; border-radius: 8px; font-size: 11.5px; font-weight: 900; cursor: pointer; text-decoration: none; transition: all 0.2s ease; letter-spacing: -0.5px; }
-    .mini-btn:active { transform: scale(0.95); }
-    .btn-stats { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #38bdf8; color: #38bdf8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.15); }
-    .btn-tele { background: linear-gradient(135deg, #162a45, #0d1929); border: 1px solid #2a85ff; color: #fff; box-shadow: 0 0 8px rgba(42, 133, 255, 0.2); }
-    .tele-icon { width: 15px; height: 15px; fill: currentColor; stroke: currentColor; stroke-width: 0.5; flex-shrink: 0; margin-top: -1px; }
-
-    /* =========================================
-       2. 대형 캔버스 레이더
-       ========================================= */
-    .radar-panel { background: #0c1017; padding: 8px 16px 2px; display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid #1a2233; flex-shrink: 0; }
-    .radar-hud-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; padding: 0 4px; }
-    .core-status-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #00e676; }
-    .pulse-dot { width: 8px; height: 8px; background: #00e676; border-radius: 50%; box-shadow: 0 0 8px #00e676; animation: pulse 1.5s infinite; }
-    .radar-hud-tag { font-size: 9.5px; color: #64748b; font-weight: 700; }
-    #radarCanvas { width: 340px; height: 220px; }
-
-    /* =========================================
-       3. 종목 스크롤 리스트 (3.5개 뷰포트 확보)
-       ========================================= */
-    .scroll-container { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; background: #080a0f; }
-    .scroll-container::-webkit-scrollbar { width: 4px; }
-    .scroll-container::-webkit-scrollbar-thumb { background: #242c3d; border-radius: 4px; }
-    
-    .target-card { background: rgba(22, 28, 40, 0.95); border: 1px solid #1e2638; border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); flex-shrink: 0; }
-    .card-row-1 { display: flex; justify-content: space-between; align-items: center; }
-    .c-title { font-size: 14px; font-weight: 900; color: #fff; display: flex; align-items: baseline; gap: 4px; }
-    .c-title small { font-size: 11px; color: #64748b; font-weight: 600; }
-    .c-status { font-size: 11px; font-weight: 800; color: #ff334b; }
-    
-    .card-row-2 { display: flex; justify-content: space-between; gap: 6px; }
-    .p-chip { background: #0b0f17; border: 1px solid #1a2233; border-radius: 6px; padding: 5px 0; font-size: 10px; font-weight: 800; color: #cbd5e1; text-align: center; flex: 1; letter-spacing: -0.3px; }
-    .p-chip.win { color: #ff334b; border-color: rgba(255, 51, 75, 0.3); background: rgba(255, 51, 75, 0.05); }
-    .p-chip.loss { color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); background: rgba(56, 189, 248, 0.05); }
-
-    /* =========================================
-       4. 하단 자동매매 독
-       ========================================= */
-    .bottom-dock { padding: 12px 16px 20px; background: rgba(15, 19, 26, 0.98); border-top: 1px solid #1e2638; flex-shrink: 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
-    .switch-btn { width: 100%; height: 58px; border-radius: 14px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; cursor: pointer; transition: all 0.25s ease; background: linear-gradient(135deg, rgba(0, 230, 118, 0.12), rgba(15, 19, 26, 0.9)); border: 2px solid #00e676; box-shadow: 0 0 20px rgba(0, 230, 118, 0.25); }
-    .switch-btn .btn-main-ko { color: #00e676; font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
-    .switch-btn .btn-sub-en { color: rgba(0, 230, 118, 0.7); font-size: 9px; font-weight: 800; margin-top: 2px; letter-spacing: 0.5px; }
-    .switch-btn .status-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: #00e676; }
-    .armed-dot { width: 9px; height: 9px; background: #ff334b; border-radius: 50%; box-shadow: 0 0 8px #ff334b; animation: blink 0.8s infinite alternate; }
-    
-    .switch-btn.inactive { background: #161b24; border: 2px solid #334155; box-shadow: none; }
-    .switch-btn.inactive .btn-main-ko { color: #64748b; }
-    .switch-btn.inactive .btn-sub-en { color: #475569; }
-    .switch-btn.inactive .status-indicator { color: #475569; }
-    .switch-btn.inactive .armed-dot { display: none; }
-
-    .btn-text-group { text-align: left; }
-    .security-notice { text-align: center; margin-top: 8px; font-size: 10px; font-weight: 600; color: #64748b; display: flex; justify-content: center; align-items: center; gap: 5px; }
-
-    /* =========================================
-       5. 모달 구역
-       ========================================= */
-    .modal-overlay-center { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 200; padding: 16px; }
-    .modal-box-center { width: 100%; background: #161c26; border-radius: 24px; padding: 20px; animation: popIn 0.25s ease; position: relative; }
-    .close-x-btn { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 4px; }
-
-    /* 성적표 모달 */
-    .stats-card { border: 1px solid #38bdf8; box-shadow: 0 0 30px rgba(56, 189, 248, 0.2); }
-    .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .stats-title { font-size: 17px; font-weight: 900; color: #fff; }
-    .tab-switcher { display: flex; background: #0b0f17; border-radius: 12px; padding: 3px; margin-bottom: 14px; }
-    .tab-btn { flex: 1; padding: 8px; border: none; background: transparent; color: #64748b; font-size: 12px; font-weight: 800; border-radius: 10px; cursor: pointer; }
-    .tab-btn.active { background: #1e293b; color: #38bdf8; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
-    .stats-content-box { display: flex; flex-direction: column; gap: 10px; }
-    .stat-row-box { background: #0b0f17; padding: 12px; border-radius: 14px; border: 1px solid #242c3d; }
-    .stat-row-top { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 5px; }
-    .stat-row-main { display: flex; justify-content: space-between; align-items: baseline; }
-    .val-neutral { color: #f8fafc; font-weight: 800; }
-    .val-win { color: #ff334b; font-weight: 900; }
-    .val-loss { color: #38bdf8; font-weight: 900; }
-    .stat-pnl-text { font-size: 14px; font-weight: 900; }
-
-    /* API 설정 모달 */
-    .vault-box { border: 1px solid #00e676; box-shadow: 0 0 30px rgba(0, 230, 118, 0.15); }
-    .vault-title { font-size: 17px; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 6px; margin-bottom: 16px; }
-    .form-group { margin-bottom: 12px; }
-    .form-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .form-label { font-size: 11px; font-weight: 800; color: #cbd5e1; }
-    .form-input { width: 100%; background: #0b0f17; border: 1px solid #334155; border-radius: 10px; padding: 12px; color: #fff; font-size: 13px; font-family: monospace; outline: none; }
-    .form-input:focus { border-color: #00e676; }
-    
-    .vault-warn-box { font-size: 10.5px; color: #e2e8f0; background: rgba(255, 51, 75, 0.1); border: 1px dashed rgba(255, 51, 75, 0.4); border-radius: 10px; padding: 10px; line-height: 1.5; margin-bottom: 16px; word-break: keep-all; }
-    .vault-warn-box strong { color: #ff334b; }
-    .save-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #00e676, #00b259); border: none; border-radius: 14px; color: #000; font-size: 14px; font-weight: 900; cursor: pointer; margin-top: 8px; margin-bottom: 16px;}
-    
-    .cancel-sub-box { border-top: 1px solid #1e2638; padding-top: 16px; margin-top: 8px; text-align: center; }
-    .cancel-sub-text { font-size: 11px; color: #64748b; margin-bottom: 8px; word-break: keep-all; }
-    .cancel-sub-btn { background: transparent; border: 1px solid #334155; color: #94a3b8; padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
-    .cancel-sub-btn:active { background: rgba(255, 255, 255, 0.05); }
-
-    /* 페이월(결제) 모달 */
-    .modal-overlay-bottom { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: flex-end; z-index: 300; }
-    .paywall-modal { width: 100%; background: #161c26; border-top: 2px solid #ffd700; border-radius: 24px 24px 0 0; padding: 22px 20px 24px; animation: slideUp 0.3s ease; }
-    .modal-title { font-size: 18px; font-weight: 900; color: #ffeb3b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-    .modal-desc { font-size: 12px; color: #94a3b8; line-height: 1.5; margin-bottom: 16px; word-break: keep-all;}
-    .price-box { background: #0b0f17; padding: 12px; border-radius: 12px; border: 1px solid #2b364a; margin-bottom: 14px; }
-    .price-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 4px; }
-    .sub-notice { font-size: 10px; color: #64748b; }
-    .modal-action-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #d4af37); border: none; border-radius: 14px; color: #000; font-size: 14px; font-weight: 900; cursor: pointer; margin-bottom: 8px; }
-    .modal-close-btn { width: 100%; padding: 10px; background: transparent; border: none; color: #64748b; font-size: 12px; cursor: pointer; }
-
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    @keyframes blink { 0% { opacity: 0.2; } 100% { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>R2 Quant Cockpit</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent: #10b981;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+        body {
+            margin: 0; padding: 20px;
+            background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Pretendard', sans-serif;
+        }
+        
+        /* 조종석 기본 UI */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; font-size: 22px; color: var(--accent); }
+        .settings-btn { background: transparent; border: none; color: var(--text-sub); font-size: 24px; cursor: pointer; }
+        
+        .dashboard { display: grid; gap: 15px; }
+        .panel { background: var(--panel-bg); padding: 20px; border-radius: 12px; text-align: center; }
+        .panel h3 { margin: 0 0 10px 0; font-size: 14px; color: var(--text-sub); }
+        .panel .value { font-size: 24px; font-weight: bold; }
+        
+        /* ★ 보안 금고 팝업 (모달) 스타일 */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); z-index: 999;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1e293b; width: 85%; max-width: 400px;
+            padding: 25px; border-radius: 16px; position: relative;
+            box-sizing: border-box;
+        }
+        .close-btn {
+            position: absolute; top: 15px; right: 15px;
+            color: #94a3b8; font-size: 24px; cursor: pointer; border: none; background: none;
+        }
+        
+        /* ★ 마감 디테일: 툴팁 및 텍스트 박스 UI */
+        .modal-content h2 { margin-top: 0; font-size: 18px; color: #f8fafc; display: flex; align-items: center; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: flex; align-items: center; font-size: 13px; color: #cbd5e1; margin-bottom: 5px; }
+        
+        .help-icon {
+            display: inline-flex; justify-content: center; align-items: center;
+            width: 18px; height: 18px; background: #334155; color: #cbd5e1;
+            border-radius: 50%; font-size: 11px; margin-left: 6px; cursor: pointer;
+        }
+        .help-box {
+            display: none; background: #0f172a; border-left: 3px solid var(--accent);
+            padding: 10px; font-size: 12px; color: #94a3b8; margin-bottom: 10px;
+            border-radius: 0 4px 4px 0; line-height: 1.5;
+        }
+        
+        input {
+            width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155;
+            color: white; border-radius: 8px; box-sizing: border-box; font-size: 14px;
+        }
+        .save-btn {
+            width: 100%; padding: 14px; background: var(--accent); color: white;
+            border: none; border-radius: 8px; font-weight: bold; font-size: 16px;
+            margin-top: 10px; cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="phone-frame">
-    
-    <!-- 프리미엄 스플래시 로딩 -->
-    <div id="splashScreen">
-      <div class="splash-version">1.00.2ver</div>
-      <div class="splash-logo">R2 Quant</div>
-      <div class="splash-loading-box">
-        <div class="splash-text-row">
-          <span class="splash-loading-text">R2 마스터 엔진 V3 가동 준비중...</span>
-          <span class="splash-counter" id="progressCount">0/300</span>
-        </div>
-        <div class="splash-bar-bg">
-          <div class="splash-bar-fill" id="progressBar"></div>
-        </div>
-      </div>
+    <div class="header">
+        <h1>R2 Quant Engine</h1>
+        <button class="settings-btn" onclick="openModal()">⚙️</button>
     </div>
 
-    <!-- 1. 관제탑 헤더 (A안 전광판 레이아웃) -->
-    <div class="hud-header">
-      <div class="today-scoreboard">
-        <div class="today-score-title">당일 실시간 실적 (TODAY)</div>
-        <div class="score-main">
-          <span class="score-rate">100%</span>
-          <div class="score-detail-col">
-            <div class="score-wl-row">
-              <span class="win-tag-mini">1승</span>
-              <span class="loss-tag-mini">0패</span>
+    <div class="dashboard">
+        <div class="panel">
+            <h3>레이더 감시 상태</h3>
+            <div class="value" style="color: var(--accent);">3 파이프라인 가동 중</div>
+        </div>
+        <div class="panel">
+            <h3>누적 승률 (V3.0)</h3>
+            <div class="value">-.- %</div>
+        </div>
+    </div>
+
+    <!-- 🔒 증권사 API 보안 금고 모달 -->
+    <div id="apiModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">×</button>
+            
+            <!-- 1. 키움증권 타이틀 및 안내 -->
+            <h2>🔒 키움증권 API 보안 금고 <span class="help-icon" onclick="toggleHelp('help-broker')">?</span></h2>
+            <div id="help-broker" class="help-box">
+                현재 R2 시스템은 국내에서 가장 안정적인 자동매매 환경을 제공하는 <b>'키움증권'</b> 전용으로 설계되어 있습니다.<br><br>증권사들마다 통신 언어와 기준이 모두 달라서 하나로 통일하여 완벽성을 높였습니다. 추후 업데이트를 통해 KB증권, 한국투자증권 등 다른 증권사들도 차례대로 선택하실 수 있도록 기능이 추가될 예정입니다.
             </div>
-            <span class="score-pnl">(+6.0%)</span>
-          </div>
+
+            <!-- 2. 계좌번호 -->
+            <div class="input-group">
+                <label>종합계좌번호 (8자리 숫자) <span class="help-icon" onclick="toggleHelp('help-account')">?</span></label>
+                <div id="help-account" class="help-box">
+                    키움증권 앱(영웅문)이나 홈페이지에서 확인하실 수 있는 <b>8자리 숫자 계좌번호</b>입니다. <br><br>예를 들어 계좌번호가 12345678 이라면 하이픈(-)이나 빈칸 없이 숫자만 정확하게 적어주세요. 이 번호가 틀리면 매수 주문이 들어가지 않습니다.
+                </div>
+                <input type="number" id="accountNum" placeholder="예: 12345678">
+            </div>
+
+            <!-- 3. APP KEY -->
+            <div class="input-group">
+                <label>증권사 APP KEY (앱 키) <span class="help-icon" onclick="toggleHelp('help-appkey')">?</span></label>
+                <div id="help-appkey" class="help-box">
+                    키움증권 홈페이지(Open API)에서 대표님께서 직접 발급받으신 영문과 숫자가 섞인 긴 키입니다.<br><br>로봇이 대표님을 대신해서 주문을 넣으려면 <b>'내가 이 계좌의 주인으로부터 권한을 받았다'</b>는 신분증이 필요한데, 그것이 바로 이 앱 키입니다.
+                </div>
+                <input type="text" id="appKey" placeholder="발급받은 APP KEY 입력">
+            </div>
+
+            <!-- 4. APP SECRET -->
+            <div class="input-group">
+                <label>증권사 APP SECRET (시크릿 키) <span class="help-icon" onclick="toggleHelp('help-secret')">?</span></label>
+                <div id="help-secret" class="help-box">
+                    위의 앱 키와 짝을 이루는 아주 중요한 비밀번호(시크릿 키)입니다.<br><br>걱정하지 마세요. 여기에 입력하시는 정보는 외부 서버로 단 1바이트도 빠져나가지 않으며, <b>오직 대표님이 지금 들고 계신 스마트폰 안드로이드 기기 내부의 특수 보안 금고에만 철저하게 암호화되어 안전하게 보관</b>됩니다.
+                </div>
+                <input type="password" id="appSecret" placeholder="발급받은 시크릿 키 입력">
+            </div>
+
+            <button class="save-btn" onclick="saveToVault()">단말기에 안전하게 저장하기</button>
         </div>
-      </div>
-      
-      <div class="header-right-col">
-        <!-- 1열: VIP/Basic 배지 + 설정 -->
-        <div class="account-row">
-          <div id="planBadge" class="vip-badge">
-            <svg class="crown-icon" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
-            <span id="planText">VIP (D-1000)</span>
-          </div>
-          <button class="settings-btn" onclick="openVaultModal()">⚙️</button>
-        </div>
+    </div>
+
+    <script>
+        // 모달 열기/닫기
+        function openModal() { document.getElementById('apiModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('apiModal').style.display = 'none'; }
         
-        <!-- 2열: 성적표(선형그래프 변경) + 텔레그램(4글자) -->
-        <div class="action-row">
-          <button class="mini-btn btn-stats" onclick="openStatsModal()">
-            <svg class="tele-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
-            성적표
-          </button>
-          <a class="mini-btn btn-tele" href="#" onclick="alert('텔레그램 알림방으로 이동합니다.')">
-            <svg class="tele-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-            텔레그램
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. 대형 레이더 패널 -->
-    <div class="radar-panel">
-      <div class="radar-hud-bar">
-        <div class="core-status-badge"><div class="pulse-dot"></div><span>R2 코어: 정상 감시 중</span></div>
-        <span class="radar-hud-tag">코스닥 500 감시 (3초 주기)</span>
-      </div>
-      <canvas id="radarCanvas" width="340" height="220"></canvas>
-    </div>
-
-    <!-- 3. 종목 스크롤 리스트 -->
-    <div class="scroll-container">
-      <div class="target-card">
-        <div class="card-row-1">
-          <span class="c-title">🎯 삼천당제약 <small>000250</small></span>
-          <span class="c-status">50% 중심값 도달</span>
-        </div>
-        <div class="card-row-2">
-          <span class="p-chip">진입 142,500원</span>
-          <span class="p-chip win">익절 151,000원 (+6%)</span>
-          <span class="p-chip loss">손절 138,200원 (-3%)</span>
-        </div>
-      </div>
-      <div class="target-card">
-        <div class="card-row-1">
-          <span class="c-title">🎯 에이팩트 <small>200470</small></span>
-          <span class="c-status" style="color: #00e676;">타점 접근 중</span>
-        </div>
-        <div class="card-row-2">
-          <span class="p-chip">진입 4,120원</span>
-          <span class="p-chip win">익절 4,365원 (+6%)</span>
-          <span class="p-chip loss">손절 3,995원 (-3%)</span>
-        </div>
-      </div>
-      <div class="target-card">
-        <div class="card-row-1">
-          <span class="c-title">🎯 와이씨켐 <small>112290</small></span>
-          <span class="c-status" style="color: #64748b;">원거리 감시</span>
-        </div>
-        <div class="card-row-2">
-          <span class="p-chip">진입 28,500원</span>
-          <span class="p-chip win">익절 30,200원 (+6%)</span>
-          <span class="p-chip loss">손절 27,600원 (-3%)</span>
-        </div>
-      </div>
-      <div class="target-card">
-        <div class="card-row-1">
-          <span class="c-title">🎯 흥구석유 <small>024060</small></span>
-          <span class="c-status" style="color: #64748b;">원거리 감시</span>
-        </div>
-        <div class="card-row-2">
-          <span class="p-chip">진입 12,500원</span>
-          <span class="p-chip win">익절 13,250원 (+6%)</span>
-          <span class="p-chip loss">손절 12,125원 (-3%)</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. 하단 자동매매 독 -->
-    <div class="bottom-dock">
-      <div id="switchBtn" class="switch-btn active" onclick="handleSwitchClick()">
-        <div class="btn-text-group">
-          <div id="btnMainKo" class="btn-main-ko">자동매매 가동 중</div>
-          <div class="btn-sub-en">AUTO EXECUTION ENGINE</div>
-        </div>
-        <div class="status-indicator">
-          <div class="armed-dot" id="armedDot"></div>
-          <span id="btnStatusText">실시간 가동 (ON)</span>
-        </div>
-      </div>
-      <div class="security-notice">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="#38bdf8"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-        <span>단말기 로컬 암호화 보관 | 서버 전송 0%</span>
-      </div>
-    </div>
-
-    <!-- 5. 모달 구역 -->
-    
-    <!-- 5.1 성적표 모달 -->
-    <div id="statsOverlay" class="modal-overlay-center">
-      <div class="modal-box-center stats-card">
-        <div class="stats-header">
-          <div class="stats-title"><span>📊 성적표 & 누적 통계</span></div>
-          <button class="close-x-btn" onclick="closeStatsModal()">✕</button>
-        </div>
-        <div class="tab-switcher">
-          <button id="tabSys" class="tab-btn active" onclick="switchStatsTab('SYS')">🤖 R2 공식 성적</button>
-          <button id="tabUser" class="tab-btn" onclick="switchStatsTab('USER')">📱 내 실제 체결</button>
-        </div>
-        <div id="sysStatsView" class="stats-content-box">
-          <div class="stat-row-box">
-            <div class="stat-row-top"><span>■ 이번 주 누적 (This Week)</span><span class="val-win">승률 75.0%</span></div>
-            <div class="stat-row-main"><div style="font-size: 16px;"><span class="val-neutral">4전 </span><span class="val-win">3승 </span><span class="val-loss">1패</span></div><span class="stat-pnl-text val-win">+18.0%</span></div>
-          </div>
-          <div class="stat-row-box">
-            <div class="stat-row-top"><span>■ 이번 달 누적 (This Month)</span><span class="val-win">승률 81.8%</span></div>
-            <div class="stat-row-main"><div style="font-size: 16px;"><span class="val-neutral">22전 </span><span class="val-win">18승 </span><span class="val-loss">4패</span></div><span class="stat-pnl-text val-win">+96.0%</span></div>
-          </div>
-          <div class="stat-row-box">
-            <div class="stat-row-top"><span>■ 시스템 전체 누적 (All-Time)</span><span class="val-win">승률 68.4%</span></div>
-            <div class="stat-row-main"><div style="font-size: 16px;"><span class="val-neutral">총 28전 </span><span class="val-win">19승 </span><span class="val-loss">9패</span></div><span class="stat-pnl-text val-win">+114.0%</span></div>
-          </div>
-        </div>
-        <div id="userStatsView" class="stats-content-box" style="display: none;">
-          <div class="stat-row-box">
-            <div class="stat-row-top"><span>내 가입 후 실현 승률</span><span style="color: #94a3b8;">가입일: 2026.10.02</span></div>
-            <div class="stat-row-main"><div style="font-size: 16px;"><span class="val-win">승률 83.3% </span><span style="font-size: 13px;">(<span class="val-win">5승</span> <span class="val-loss">1패</span>)</span></div><span class="stat-pnl-text val-win">순익 +24.0%</span></div>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">총 <span class="val-neutral">6회</span> 체결 집계 완료</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5.2 API 설정 모달 (+ 하단 구독 취소) -->
-    <div id="vaultOverlay" class="modal-overlay-center">
-      <div class="modal-box-center vault-box">
-        <button class="close-x-btn" onclick="closeVaultModal()">✕</button>
-        <div class="vault-title">🔒 증권사 API 보안 금고</div>
-        <div class="form-group">
-          <div class="form-label-row">
-            <span class="form-label">종합계좌번호 (8자리 숫자)</span>
-          </div>
-          <input type="text" class="form-input" placeholder="예: 12345678" maxlength="8">
-        </div>
-        <div class="form-group">
-          <div class="form-label-row">
-            <span class="form-label">증권사 APP KEY (앱 키)</span>
-          </div>
-          <input type="password" class="form-input" placeholder="발급받은 긴 영문/숫자 키">
-        </div>
-        <div class="form-group">
-          <div class="form-label-row">
-            <span class="form-label">증권사 APP SECRET (시크릿 키)</span>
-          </div>
-          <input type="password" class="form-input" placeholder="발급받은 증권사 시크릿 키 입력">
-        </div>
-        
-        <div class="vault-warn-box">
-          <strong>보안 보증:</strong> 입력하신 금융 키는 군사급 암호화(Android Keystore)를 통해 <strong>기기 내부에만 저장</strong>되며, 서버로 전송되지 않습니다.
-        </div>
-        <button class="save-btn" onclick="alert('저장되었습니다.')">단말기에 안전하게 저장하기</button>
-        
-        <div class="cancel-sub-box">
-          <div class="cancel-sub-text">구글 플레이스토어에서 위약금 없이 즉시 해지 가능합니다.</div>
-          <button class="cancel-sub-btn" onclick="cancelSubscription()">구독 관리 / 해지하기 ➔</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 6. 페이월 모달 -->
-    <div id="subModal" class="modal-overlay-bottom">
-      <div class="paywall-modal">
-        <div class="modal-title"><svg class="crown-icon" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg> VIP 자동 체결 시스템</div>
-        <div class="modal-desc" id="modalDescText">초단위 타점을 놓치지 않고 고객님의 기기에서 증권사로 직접 0.1초 만에 주문을 전송하는 VIP 전용 무인 체결 도구입니다.</div>
-        <div class="price-box">
-          <div class="price-row"><span>7일 무료 체험</span><span style="color: #ff334b;">0원</span></div>
-          <div class="sub-notice">체험 종료 후 월 15,000원 자동 갱신 (언제든 1초 만에 해지 가능)</div>
-        </div>
-        <button class="modal-action-btn" onclick="startFreeTrial()">무료 체험 시작하기 / 구독 복원</button>
-        <button class="modal-close-btn" onclick="closeModal()">다음에 하기</button>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    let currentMode = 'VIP'; 
-    let isArmed = true;
-
-    /* 스플래시 로딩 */
-    document.addEventListener("DOMContentLoaded", () => {
-      const countEl = document.getElementById("progressCount");
-      const barEl = document.getElementById("progressBar");
-      const splashEl = document.getElementById("splashScreen");
-      let count = 0; const totalFiles = 300;
-      const phases = [
-        { target: 120, delay: 10 }, { target: 135, delay: 80 }, { target: 240, delay: 15 },
-        { target: 255, delay: 100 }, { target: 300, delay: 5 }
-      ];
-      let currentPhase = 0;
-      function updateLoading() {
-        if (count >= totalFiles) {
-          setTimeout(() => {
-            splashEl.style.opacity = "0";
-            setTimeout(() => { splashEl.style.display = "none"; }, 600);
-          }, 400); return;
+        // ❓ 물음표 클릭 시 상세 설명 펼치기/접기
+        function toggleHelp(id) {
+            const el = document.getElementById(id);
+            if(el.style.display === 'block') {
+                el.style.display = 'none';
+            } else {
+                el.style.display = 'block';
+            }
         }
-        count++; countEl.innerText = `${count}/${totalFiles}`; barEl.style.width = `${(count / totalFiles) * 100}%`;
-        let nextDelay = phases[currentPhase].delay;
-        if (count >= phases[currentPhase].target && currentPhase < phases.length - 1) currentPhase++;
-        setTimeout(updateLoading, nextDelay);
-      }
-      setTimeout(updateLoading, 500);
-    });
 
-    /* 레이더 캔버스 */
-    const canvas = document.getElementById('radarCanvas');
-    const ctx = canvas.getContext('2d');
-    const cx = canvas.width / 2, cy = canvas.height / 2, maxR = 90;
-    let sweepAngle = 0; const sweepSpeed = 0.038;
-    const targets = [{ name: '삼천당제약', angle: 0.95, dist: 25, flash: 0, rippleR: 0, rippleAlpha: 0 }, { name: '에이팩트', angle: 2.85, dist: 55, flash: 0, rippleR: 0, rippleAlpha: 0 }];
+        // 안드로이드 네이티브 금고로 데이터 전송
+        function saveToVault() {
+            const appKey = document.getElementById('appKey').value;
+            const appSecret = document.getElementById('appSecret').value;
+            const accountNum = document.getElementById('accountNum').value;
 
-    function drawRadar() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.lineWidth = 1;
-      [25, 55, maxR].forEach((r, idx) => {
-        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.strokeStyle = idx === 0 ? 'rgba(255, 51, 75, 0.45)' : 'rgba(56, 189, 248, 0.2)'; ctx.stroke();
-      });
-      ctx.beginPath(); ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
-      ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR); ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)'; ctx.stroke();
+            // 빈칸 및 안드로이드와 연결 안 되었을 때를 위한 웹 자체 1차 방어막
+            if(!appKey || !appSecret || accountNum.length !== 8) {
+                alert("입력 오류: 8자리 계좌번호 및 발급받으신 키를 모두 정확히 입력해 주세요.");
+                return;
+            }
 
-      for (let i = 1; i <= 8; i++) {
-        const trailA = sweepAngle - (i * 0.04);
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(trailA) * maxR, cy + Math.sin(trailA) * maxR);
-        ctx.strokeStyle = `rgba(0, 230, 118, ${0.28 - (i * 0.032)})`; ctx.lineWidth = 1.2; ctx.stroke();
-      }
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(sweepAngle) * maxR, cy + Math.sin(sweepAngle) * maxR);
-      ctx.strokeStyle = '#00e676'; ctx.lineWidth = 2.0; ctx.stroke();
-
-      const prevAngle = (sweepAngle - sweepSpeed + Math.PI * 2) % (Math.PI * 2);
-      const currAngle = sweepAngle % (Math.PI * 2);
-
-      targets.forEach(t => {
-        const tx = cx + Math.cos(t.angle) * t.dist, ty = cy + Math.sin(t.angle) * t.dist;
-        let hit = false;
-        if (currAngle >= prevAngle) { if (t.angle >= prevAngle && t.angle < currAngle) hit = true; } 
-        else { if (t.angle >= prevAngle || t.angle < currAngle) hit = true; }
-
-        if (hit) { t.flash = 1.0; t.rippleR = 4; t.rippleAlpha = 1.0; }
-        if (t.rippleAlpha > 0) {
-          ctx.save(); ctx.beginPath(); ctx.arc(tx, ty, t.rippleR, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(255, 51, 75, ${t.rippleAlpha})`; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
-          t.rippleR += 0.85; t.rippleAlpha -= 0.035;
+            if(window.AndroidVault) {
+                window.AndroidVault.saveApiKeys(appKey, appSecret, accountNum);
+            } else {
+                alert("웹 브라우저 테스트 모드: 실제 폰에 설치된 앱에서만 보안 저장이 가능합니다.");
+            }
         }
-        ctx.save(); ctx.beginPath(); const baseR = 4.0 + t.flash * 3.5; ctx.arc(tx, ty, baseR, 0, Math.PI * 2);
-        ctx.fillStyle = t.flash > 0.3 ? '#ffffff' : '#ff334b'; ctx.fill();
-        if (t.flash > 0.15) { ctx.fillStyle = `rgba(248, 250, 252, ${t.flash})`; ctx.font = 'bold 10px Pretendard'; ctx.fillText(t.name, tx + 9, ty + 3); }
-        ctx.restore();
-        if (t.flash > 0) t.flash -= 0.018;
-      });
-      sweepAngle = (sweepAngle + sweepSpeed) % (Math.PI * 2); requestAnimationFrame(drawRadar);
-    }
-    drawRadar();
-
-    /* UI 전환 로직 */
-    function openVaultModal() {
-      if (currentMode === 'BASIC') {
-        document.getElementById('modalDescText').innerText = "API 자동매매 연동은 VIP 회원 전용 기능입니다. 7일 무료 체험을 시작하시겠습니까?";
-        document.getElementById('subModal').style.display = 'flex';
-      } else {
-        document.getElementById('vaultOverlay').style.display = 'flex';
-      }
-    }
-    function closeVaultModal() { document.getElementById('vaultOverlay').style.display = 'none'; }
-
-    function openStatsModal() { 
-      switchStatsTab('SYS'); 
-      document.getElementById('statsOverlay').style.display = 'flex'; 
-    }
-    function closeStatsModal() { document.getElementById('statsOverlay').style.display = 'none'; }
-    function switchStatsTab(tab) {
-      if (tab === 'USER' && currentMode === 'BASIC') {
-        closeStatsModal();
-        document.getElementById('modalDescText').innerText = "개인 맞춤형 체결 장부는 VIP 자동매매 전용 기능입니다. 7일 무료 체험을 시작하세요.";
-        document.getElementById('subModal').style.display = 'flex';
-        return;
-      }
-      document.getElementById('tabUser').classList.toggle('active', tab === 'USER');
-      document.getElementById('tabSys').classList.toggle('active', tab === 'SYS');
-      document.getElementById('userStatsView').style.display = tab === 'USER' ? 'flex' : 'none';
-      document.getElementById('sysStatsView').style.display = tab === 'SYS' ? 'flex' : 'none';
-    }
-
-    function closeModal() { document.getElementById('subModal').style.display = 'none'; }
-
-    function handleSwitchClick() {
-      if (currentMode === 'BASIC') {
-        document.getElementById('modalDescText').innerText = "초단위 타점을 놓치지 않고 증권사로 직접 주문을 전송하는 VIP 전용 무인 체결 도구입니다.";
-        document.getElementById('subModal').style.display = 'flex';
-      } else {
-        isArmed = !isArmed;
-        updateUI();
-      }
-    }
-
-    function updateUI() {
-      const planBadge = document.getElementById('planBadge');
-      const btn = document.getElementById('switchBtn');
-      const mainKo = document.getElementById('btnMainKo');
-      const statusText = document.getElementById('btnStatusText');
-
-      if (currentMode === 'VIP') {
-        planBadge.className = 'vip-badge';
-        planBadge.innerHTML = `<svg class="crown-icon" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg><span id="planText">VIP (D-7)</span>`;
-        if (isArmed) {
-          btn.className = 'switch-btn active';
-          mainKo.innerText = "자동매매 가동 중";
-          statusText.innerText = "실시간 가동 (ON)";
-        } else {
-          btn.className = 'switch-btn inactive';
-          mainKo.innerText = "자동매매 대기 상태";
-          statusText.innerText = "대기 (OFF)";
-        }
-      } else {
-        planBadge.className = 'basic-badge';
-        planBadge.innerHTML = `<span>베이직</span>`;
-        btn.className = 'switch-btn inactive';
-        mainKo.innerText = "자동매매 잠금 상태";
-        statusText.innerText = "기능 잠금 (OFF)";
-      }
-    }
-
-    function startFreeTrial() {
-      alert("✅ 구글 플레이 결제 완료! \nVIP 기능이 활성화되었습니다.");
-      closeModal();
-      currentMode = 'VIP';
-      isArmed = true; 
-      updateUI();
-    }
-
-    function cancelSubscription() {
-      if(confirm("구글 플레이스토어 구독 관리 페이지로 이동합니다.\n해지 후에는 베이직 모드로 전환됩니다. 진행하시겠습니까?")) {
-        alert("❌ 구독이 취소되었습니다.\n자동매매 기능이 잠깁니다.");
-        closeVaultModal();
-        currentMode = 'BASIC';
-        isArmed = false;
-        updateUI();
-      }
-    }
-  </script>
+    </script>
 </body>
 </html>
