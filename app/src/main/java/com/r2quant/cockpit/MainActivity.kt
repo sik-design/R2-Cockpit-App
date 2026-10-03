@@ -37,21 +37,30 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = WebViewClient()
         
         webView.webChromeClient = object : WebChromeClient() {
+            // ★ 마감 1: 촌스러운 file:// 팝업을 차단하고, 세련된 안드로이드 순정 알림(Toast)으로 변환
             override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
-                return super.onJsAlert(view, url, message, result)
+                Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                result?.confirm() // 백그라운드에서 확인 버튼을 자동 처리
+                return true // 투박한 경고창을 화면에 띄우지 않음
             }
         }
         
-        // ★ 핵심 추가: 웹뷰(조종석 UI)와 안드로이드 금고를 연결하는 데이터 파이프라인 개통
         webView.addJavascriptInterface(WebAppInterface(this), "AndroidVault")
-        
         webView.loadUrl("file:///android_asset/index.html")
     }
 
-    // ★ 최신 AES-256-GCM 군사급 암호화 금고 로직 (BYOK 원칙)
     inner class WebAppInterface(private val context: Context) {
         @JavascriptInterface
         fun saveApiKeys(appKey: String, appSecret: String, accountNum: String) {
+            
+            // ★ 마감 2: 필수 기입 누락 및 계좌번호 자리수(8자리) 검사 (오입력 방지)
+            if (appKey.isBlank() || appSecret.isBlank() || accountNum.length != 8) {
+                (context as AppCompatActivity).runOnUiThread {
+                    Toast.makeText(context, "입력 오류: 계좌번호(8자리) 및 키 값을 정확히 확인해주세요.", Toast.LENGTH_LONG).show()
+                }
+                return
+            }
+
             try {
                 val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
                 val sharedPrefs = EncryptedSharedPreferences.create(
@@ -62,7 +71,6 @@ class MainActivity : AppCompatActivity() {
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
                 )
                 
-                // 폰 내부에 암호화하여 철저히 봉인
                 sharedPrefs.edit().apply {
                     putString("APP_KEY", appKey)
                     putString("APP_SECRET", appSecret)
@@ -70,9 +78,13 @@ class MainActivity : AppCompatActivity() {
                     apply()
                 }
                 
-                Toast.makeText(context, "보안 금고에 안전하게 암호화되어 저장되었습니다.", Toast.LENGTH_SHORT).show()
+                (context as AppCompatActivity).runOnUiThread {
+                    Toast.makeText(context, "보안 금고에 성공적으로 장착되었습니다.", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
-                Toast.makeText(context, "금고 저장 실패: 보안 모듈 오류", Toast.LENGTH_SHORT).show()
+                (context as AppCompatActivity).runOnUiThread {
+                    Toast.makeText(context, "금고 저장 실패: 기기 보안 모듈 에러", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
