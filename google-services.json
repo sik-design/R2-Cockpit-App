@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "532170279930",
+    "project_id": "r2-master-1c7f3",
+    "storage_bucket": "r2-master-1c7f3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532170279930:android:d35a3dd2b2feef99f2b243",
+        "android_client_info": {
+          "package_name": "com.r2quant.cockpit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbBkNELO8BhMrNBQ3Bxzeb_mRURVEDzVw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
